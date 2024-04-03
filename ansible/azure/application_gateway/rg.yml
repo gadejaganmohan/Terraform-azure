@@ -1,0 +1,9 @@
+
+#  vars:
+#   resource_group: base-rg
+#   location: eastus 
+#tasks:
+    - name: Create a resource group "{{ resource_group }}"
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"

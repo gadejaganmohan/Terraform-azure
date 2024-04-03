@@ -1,0 +1,23 @@
+- hosts: localhost
+  vars:
+    resource_group: myResourceGroup
+    mysqlserver_name: mysqlserveransible
+  tasks:
+    - name: Query MySQL Servers in current resource group
+      azure_rm_mysqlserver_info:
+        resource_group: "{{ resource_group }}"
+      register: mysqlserverfacts
+
+    - name: Dump MySQL Server facts
+      debug:
+        var: mysqlserverfacts
+
+    - name: Query MySQL Databases
+      azure_rm_mysqldatabase_info:
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ mysqlserver_name }}"
+      register: mysqldatabasefacts
+
+    - name: Dump MySQL Database Facts
+      debug:
+        var: mysqldatabasefacts

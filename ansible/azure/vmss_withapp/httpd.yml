@@ -1,0 +1,20 @@
+---
+- name: Install and Configure Apache HTTP Server on CentOS
+  hosts: azure_vms
+  become: yes
+  tasks:
+    - name: Update package index
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Install Apache HTTP Server
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start Apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes                     

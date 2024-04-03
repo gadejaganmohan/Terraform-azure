@@ -1,0 +1,19 @@
+- hosts: localhost
+  vars:
+    resource_group: myResourceGroup
+    mysqlserver_name: mysqlserveransible
+  tasks:
+  - name: Open firewall to access MySQL Server from outside
+    azure_rm_resource:
+      api_version: '2017-12-01'
+      resource_group: "{{ resource_group }}"
+      provider: dbformysql
+      resource_type: servers
+      resource_name: "{{ mysqlserver_name }}"
+      subresource:
+        - type: firewallrules
+          name: externalaccess
+      body:
+        properties:
+          startIpAddress: "0.0.0.0"
+          endIpAddress: "255.255.255.255"

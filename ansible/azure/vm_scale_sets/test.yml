@@ -1,0 +1,103 @@
+- hosts: localhost
+  vars:
+    resource_group: myResourceGroup1
+    vmss_name: myvmscalesetname
+    location: eastus
+    admin_username: azureuser
+    admin_password: Mypassword@123
+
+  tasks:
+    - name: Create a resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}vnet"
+        address_prefixes: "10.0.0.0/16"
+
+    - name: Add subnet
+      azure_rm_subnet:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}subnet"
+        address_prefix: "10.0.1.0/24"
+        virtual_network: "{{ vmss_name }}vnet"
+
+    - name: Create public IP address
+      azure_rm_publicipaddress:
+        resource_group: "{{ resource_group }}"
+        allocation_method: Static
+        name: "{{ vmss_name }}publicip"
+        sku: Standard
+
+    - name: Create Network Security Group that allows SSH
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}nsg"
+        rules:
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 1001
+            direction: Inbound
+
+    - name: Create a load balancer
+      azure_rm_loadbalancer:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}lb"
+        location: "{{ location }}"
+        sku: Standard
+        frontend_ip_configurations:
+          - name: "{{ vmss_name }}front-config"
+            public_ip_address: "{{ vmss_name }}publicip"
+        backend_address_pools:
+          - name: "{{ vmss_name }}backend-pool"
+        probes:
+          - name: "{{ vmss_name }}prob0"
+            protocol: Tcp
+            port: 8080
+            interval: 10
+            fail_count: 3
+        load_balancing_rules:
+          - name: "{{ vmss_name }}lb-rules"
+            frontend_ip_configuration: "{{ vmss_name }}front-config"
+            backend_address_pool: "{{ vmss_name }}backend-pool"
+            frontend_port: 80
+            backend_port: 8080
+            protocol: Tcp
+            probe: "{{ vmss_name }}prob0"
+
+
+    - name: Create VMSS
+      azure_rm_virtualmachinescaleset:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}"
+        vm_size: Standard_DS1_v2
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        ssh_password_enabled: true
+        capacity: 2
+        virtual_network_name: "{{ vmss_name }}vnet"
+        subnet_name: "{{ vmss_name }}subnet"
+        tier: Standard
+        managed_disk_type: Standard_LRS
+        os_disk_caching: ReadWrite
+        image:
+          offer: UbuntuServer
+          publisher: Canonical
+          sku: 16.04-LTS
+          version: latest
+        load_balancer: "{{ vmss_name }}lb"
+        data_disks:
+          - lun: 0
+            disk_size_gb: 20
+            managed_disk_type: Standard_LRS
+            caching: ReadOnly
+          - lun: 1
+            disk_size_gb: 30
+            managed_disk_type: Standard_LRS
+            caching: ReadOnly
+

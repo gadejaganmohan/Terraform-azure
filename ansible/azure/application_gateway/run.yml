@@ -1,0 +1,21 @@
+ - hosts: localhost
+   vars: 
+     resource_group: base-rg
+     location: eastus
+     vnet_name: base-vnet
+     subnet_name: base-subnet
+     publicip_name: base-publicip
+     publicip_domain: base-domain
+     appgw_name: base-appgateway
+     aci_1_name: myACI1
+     aci_2_name: myACI2
+     
+   tasks:
+     - name: running rg
+       import_tasks: rg.yml
+     - name: running vnet
+       import_tasks: vnet.yml
+     - name: running aci's
+       import_tasks: aci_HTTPD.yml
+     - name: running appgw_create
+       import_tasks: appgw_create.yml

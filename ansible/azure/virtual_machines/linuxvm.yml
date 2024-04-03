@@ -1,0 +1,63 @@
+- name: Create Azure VM
+  hosts: localhost
+  connection: local
+  tasks:
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: myResourceGroup21
+      location: eastus
+  - name: Create virtual network
+    azure_rm_virtualnetwork:
+      resource_group: myResourceGroup21
+      name: myVnet21
+      address_prefixes: "10.0.0.0/16"
+  - name: Add subnet
+    azure_rm_subnet:
+      resource_group: myResourceGroup21
+      name: mySubnet21
+      address_prefix: "10.0.1.0/24"
+      virtual_network: myVnet21
+  - name: Create public IP address
+    azure_rm_publicipaddress:
+      resource_group: myResourceGroup21
+      allocation_method: Static
+      name: myPublicIP21
+    register: output_ip_address
+  - name: Public IP of VM
+    debug:
+      msg: "The public IP is {{ output_ip_address.state.ip_address }}."
+  - name: Create Network Security Group that allows SSH
+    azure_rm_securitygroup:
+      resource_group: myResourceGroup21
+      name: myNetworkSecurityGroup21
+      rules:
+        - name: SSH
+          protocol: Tcp
+          destination_port_range: 22
+          access: Allow
+          priority: 1001
+          direction: Inbound
+  - name: Create virtual network interface card
+    azure_rm_networkinterface:
+      resource_group: myResourceGroup21
+      name: myNIC21
+      virtual_network: myVnet21
+      subnet: mySubnet21
+      public_ip_name: myPublicIP21
+      security_group: myNetworkSecurityGroup21
+  - name: Create VM
+    azure_rm_virtualmachine:
+      resource_group: myResourceGroup21
+      name: myVM21
+      vm_size: Standard_DS1_v2
+      admin_username: azureuser21
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: /home/azureuser21/.ssh/authorized_keys
+          key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCnyOl/t9LAT8LzOjKvy3BKVnPZbRQlieF97Vy7pEi5XwDChK3SjLqfy1ehfF4mP/fXFNW48rJt2OGfKm4L7NqRS0HVK+hV2BNd/o3ntlZk494K+4I7LwZiEipNTojasdD6h5Ph+JhWFJg6qe9/FHBH669gVM09pxoEK/wnFFNKChDKX6I56oM8LQM0p0UbulVKVdWRlhiss2aY16PgQyI/AqHYSaIgdCby3T5ZRyG3g4u+nNCfKLVpqvNiHVCI1BzsUXsDRk9tXQtrzmoytP+MbpZAS0dobQf5OfcKclrC7e6nfnlCe+5OnZgw9bIls7gS6HklrAMhL7cK3HFApXqQZ0uIcjGDQYQ8vpagHVj13buUDvOJoD+IBe7U54OLD4HUqN7jYiE67foQP0+FLrg6738z2ZuVAbd2sC77YnjXWR6nqr4KEwrtrEFRAbyGrGg7rIDIhPduyEBW0x29rLhqlQPVE5v2mKGdBLHyOEEBTU2EGTCrHj4zyYnOUhZXASPgfV8PgC3kSeCA8xhxyFVjqxzAcQ+KwGkyoWz4DMIdkdXWbHd0eWlcdSdoiKvM2eW0Z+7htAfGopLle8GDX2ngutduJ+6l4iBejNDyEiSIMcmGYiX6GFWEIVHBklasJYc6vjYufiAlYhbGKCswtwsQNU4MLuHwYH2CLSAMDOg/kw== vagrant@centos"
+      network_interfaces: myNIC21
+      image:
+        offer: CentOS
+        publisher: OpenLogic
+        sku: '7.5'
+        version: latest

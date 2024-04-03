@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  gather_facts: false
+  
+  vars:
+    resource_group: myResourceGroup1
+    vmss_name: myvmscalesetname
+  
+  tasks:
+    - name: Get scaleset info
+      azure_rm_virtualmachinescaleset_info:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}"
+        format: curated
+      register: output_scaleset
+
+    - name: set image fact
+      set_fact:
+        vmss_image: "{{ output_scaleset.vmss[0].image }}"
+
+    - name: Create VMSS
+      no_log: true
+      azure_rm_virtualmachinescaleset:
+        resource_group: "{{ resource_group }}"
+        name: "{{ vmss_name }}"
+        capacity: 1
+        image: "{{ vmss_image }}"

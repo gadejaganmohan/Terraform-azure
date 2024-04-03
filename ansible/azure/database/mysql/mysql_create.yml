@@ -1,0 +1,34 @@
+- hosts: localhost
+  vars:
+    resource_group: myResourceGroup
+    location: eastus 
+    mysqlserver_name: mysqlserveransible
+    mysqldb_name: mysqldbansible
+    admin_username: mysqladmin
+    admin_password: Password@123 
+  tasks:
+    
+    - name: Create a resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Create MySQL Server
+      azure_rm_mysqlserver:
+        resource_group: "{{ resource_group }}"
+        name: "{{ mysqlserver_name }}"
+        sku:
+          name: B_Gen5_1
+          tier: Basic
+        location: "{{ location }}"
+        version: 8.0
+        enforce_ssl: True
+        admin_username: "{{ admin_username }}"
+        admin_password: "{{ admin_password }}"
+        storage_profile:
+          storage_mb: 51200
+    - name: Create instance of MySQL Database
+      azure_rm_mysqldatabase:
+        resource_group: "{{ resource_group }}"
+        server_name: "{{ mysqlserver_name }}"
+        name: "{{ mysqldb_name }}"

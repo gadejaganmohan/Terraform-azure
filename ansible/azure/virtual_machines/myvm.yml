@@ -1,0 +1,67 @@
+---
+- name: create linux vm
+  hosts: localhost
+  connection: local
+  tasks:
+
+  - name: creating resource group
+    azure_rm_resourcegroup:
+      name: nanirg
+      location: eastus
+  - name: creating vnet
+    azure_rm_virtualnetwork:
+      resource_group: nanirg
+      name: nanivnet
+      address_prefixes: "10.0.0.0/16"
+  - name: creating subnet
+    azure_rm_subnet:
+      resource_group: nanirg
+      name: nanisubnet
+      virtual_network: nanivnet
+      address_prefix: "10.0.0.0/24"
+  - name: creating publicip
+    azure_rm_publicipaddress:
+      resource_group: nanirg
+      name: nanipublicip
+      allocation_method: static
+    register: output_ip_address
+  - name:
+    debug:
+      msg: "Ip address {{output_ip_address.state.ip_address}}"
+  - name: creating NSG
+    azure_rm_securitygroup:
+      resource_group: nanirg
+      name: naninsg
+      rules:
+       - name: ssh
+         protocol: Tcp
+         destination_port_range: 22
+         access: Allow
+         priority: 1001
+         direction: Inbound
+  - name: creating Nic
+    azure_rm_networkinterface:
+      resource_group: nanirg
+      name: naninic
+      virtual_network: nanivnet
+      subnet: nanisubnet
+      public_ip_name: nanipublicip
+      security_group: naninsg
+  - name: creating vm
+    azure_rm_virtualmachine:
+      resource_group: nanirg
+      name: nanivm
+      vm_size: Standard_DS1_v2
+      admin_username: naniuser
+      ssh_password_enabled: false
+      ssh_public_keys:
+        - path: /home/naniuser/.ssh/authorized_keys
+          key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCnyOl/t9LAT8LzOjKvy3BKVnPZbRQlieF97Vy7pEi5XwDChK3SjLqfy1ehfF4mP/fXFNW48rJt2OGfKm4L7NqRS0HVK+hV2BNd/o3ntlZk494K+4I7LwZiEipNTojasdD6h5Ph+JhWFJg6qe9/FHBH669gVM09pxoEK/wnFFNKChDKX6I56oM8LQM0p0UbulVKVdWRlhiss2aY16PgQyI/AqHYSaIgdCby3T5ZRyG3g4u+nNCfKLVpqvNiHVCI1BzsUXsDRk9tXQtrzmoytP+MbpZAS0dobQf5OfcKclrC7e6nfnlCe+5OnZgw9bIls7gS6HklrAMhL7cK3HFApXqQZ0uIcjGDQYQ8vpagHVj13buUDvOJoD+IBe7U54OLD4HUqN7jYiE67foQP0+FLrg6738z2ZuVAbd2sC77YnjXWR6nqr4KEwrtrEFRAbyGrGg7rIDIhPduyEBW0x29rLhqlQPVE5v2mKGdBLHyOEEBTU2EGTCrHj4zyYnOUhZXASPgfV8PgC3kSeCA8xhxyFVjqxzAcQ+KwGkyoWz4DMIdkdXWbHd0eWlcdSdoiKvM2eW0Z+7htAfGopLle8GDX2ngutduJ+6l4iBejNDyEiSIMcmGYiX6GFWEIVHBklasJYc6vjYufiAlYhbGKCswtwsQNU4MLuHwYH2CLSAMDOg/kw== vagrant@centos"
+      network_interfaces: naninic
+      image:
+        offer: Centos
+        publisher: Openlogic
+        sku: '7.5'
+        version: latest
+       
+
